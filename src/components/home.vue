@@ -29,9 +29,18 @@
               <th scope="col" v-if="user.title">{{ user.title }}</th>
               <th scope="col" v-if="user.title">{{ user.body }}</th>
               <th scope="col" v-if="user.name">{{ user.name }}</th>
-              <th scope="col">{{ user.username }}</th>
-              <th scope="col">{{ user.email }}</th>
-              <th scope="col">{{ user.phone }}</th>
+              <th scope="col" v-if="user.photos">
+                <table class="table table-striped table-success">
+                  <tr v-for="photo in user.photos.data" :key="photo.id">
+                    <td>
+                      <b-img left :src="photo.url" alt="Left image"></b-img>
+                    </td>
+                  </tr>
+                </table>
+              </th>
+              <th scope="col" v-if="user.name">{{ user.username }}</th>
+              <th scope="col" v-if="user.name">{{ user.email }}</th>
+              <th scope="col" v-if="user.name">{{ user.phone }}</th>
               <th scope="col" v-if="user.name">
                 <b-button
                   v-on:click="userInfo(user.id)"
@@ -45,6 +54,12 @@
                   variant="success"
                   class="m-2"
                   >User's Post</b-button
+                >
+                <b-button
+                  v-on:click="UserAlbums(user.id)"
+                  variant="info"
+                  class="m-2"
+                  >User's Albums</b-button
                 >
               </th>
               <th scope="col" v-if="user.title">
@@ -221,7 +236,7 @@ export default {
         title: "",
         body: "",
       },
-      id : '',
+      id: "",
     };
   },
   methods: {
@@ -254,29 +269,32 @@ export default {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          query: `{
-                user(id:5) {
+          query: `query(
+                          $id: ID!,
+                    ){
+                    user(id:$id) {
                     id
                     name
                     username
                     email
                     address{
-                    street
+                      street
                     }
                     phone
                     website
                     company{
-                    name
+                      name
                     }
                     posts{
-                    links{
-                        first{
-                        limit
+                      links{
+                          first{
+                            limit
+                          }
                         }
+                      }
                     }
-                    }
-                }
-            }`,
+                  }`,
+            variables: { id: uid },
         }),
       })
         .then((response) => response.json())
@@ -290,8 +308,8 @@ export default {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          query: `{
-              user(id: 3) {
+          query: `query($id: ID!){
+              user(id: $id) {
                 posts {
                   data {
                     id
@@ -301,26 +319,59 @@ export default {
                 }
               }
             }`,
+          variables: { id: uid },
         }),
       })
         .then((response) => response.json())
         .then((data) => {
-          console.log(data["data"].user.posts.data);
           this.results = data["data"].user.posts.data;
         });
     },
-    deletePost(pid) {
-      console.log(pid);
-      this.id = pid
+    UserAlbums(aid) {
+      console.log(aid);
       fetch("https://graphqlzero.almansi.me/api", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          mutation: `(
-                $id: ID!
-              ) {
-                deletePost(id: $id)
-              }`,
+          query: `query ($id: ID!){
+                  user(id: $id) {
+                    albums{
+                      data{
+                        id
+                        photos{
+                          data{
+                            thumbnailUrl
+                            url
+                          }
+                        }
+                      }
+                    }
+                  }
+                }`,
+              variables: { id: aid },
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data["data"].user.albums.data);
+          this.results = data["data"].user.albums.data;
+        });
+    },
+    deletePost(pid) {
+      console.log(pid);
+      // this.id = pid;
+
+      fetch("https://graphqlzero.almansi.me/api", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          query: `
+            mutation (
+                  $id: ID!
+                ) {
+                  deletePost(id: $id)
+            }`,
+          variables: { id: pid },
         }),
       })
         .then((response) => response.json())
@@ -330,28 +381,64 @@ export default {
         });
     },
     upadatePosts(postUpdateResult) {
-      console.log(postUpdateResult);
-    },
-    createPosts(insertData) {
-      console.log(insertData);
-      this.insertData = insertData
+      console.log(this.postUpdateResult.id);
       fetch("https://graphqlzero.almansi.me/api", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          Accept: "application/json",
+        },
         body: JSON.stringify({
-          mutation: `(
-                $insertData: CreatePostInput!
-              ) {
-                createPost(input: $insertData) {
-                  title
-                  body
-                }
-              }`,
+          query: `mutation (
+                      $id: ID!,
+                      $postUpdateResultData: UpdatePostInput!
+                    ) {
+                      updatePost(id: $id, input: $postUpdateResultData) {
+                        id
+                        title
+                        body
+                      }
+                    }`,
+          variables: {
+            id: postUpdateResult.id,
+            postUpdateResultData: {
+              title: postUpdateResult.title,
+              body: postUpdateResult.body,
+            },
+          },
         }),
       })
         .then((response) => response.json())
         .then((data) => {
-          console.log(data);
+          console.log(data["data"]);
+          // this.results = data["data"].user.posts.data;
+        });
+    },
+    createPosts(insertData) {
+      console.log(insertData);
+      this.insertData = insertData;
+      fetch("https://graphqlzero.almansi.me/api", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          query: `mutation(
+                $insertData: CreatePostInput!
+              ) {
+                createPost(input: $insertData) {
+                  id
+                  title
+                  body
+                }
+              }`,
+          variables: { insertData: insertData },
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data["data"]);
           // this.results = data["data"].user.posts.data;
         });
     },
