@@ -65,6 +65,7 @@
                   v-on:click="UserCompany(user.id)"
                   variant="warning"
                   class="m-2"
+                  v-b-modal.modal-2
                   >User's Company Info</b-button
                 >
               </th>
@@ -123,6 +124,35 @@
               <tr>
                 <th scope="col">company</th>
                 <th scope="col">{{ userInfoResults.company }}</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </b-modal>
+
+      <b-modal id="modal-2" title="BootstrapVue">
+        <div class="col-md-12">
+          <table class="table table-borderless">
+            <thead>
+              <tr>
+                <th scope="col">id :</th>
+                <th scope="col">{{ userCompanyInfo.id }}</th>
+              </tr>
+              <tr>
+                <th scope="col">Name :</th>
+                <th scope="col">{{ userCompanyInfo.name }}</th>
+              </tr>
+              <tr>
+                <th scope="col">Company :</th>
+                <th scope="col">{{ userCompanyInfo.cname }}</th>
+              </tr>
+              <tr>
+                <th scope="col">bs :</th>
+                <th scope="col">{{ userCompanyInfo.bs }}</th>
+              </tr>
+              <tr>
+                <th scope="col">catchPhrase :</th>
+                <th scope="col">{{ userCompanyInfo.catchPhrase }}</th>
               </tr>
             </thead>
           </table>
@@ -230,14 +260,22 @@ export default {
   data() {
     return {
       results: [],
+      userCompanyInfo: {
+        id: "",
+        name: "",
+        company: "",
+        cname: "",
+        catchPhrase: "",
+        bs: "",
+      },
       userInfoResults: {
-        uid:"",
-        name:"",
-        username:"",
-        email:"",
-        address:"",
-        website:"",
-        company:""
+        uid: "",
+        name: "",
+        username: "",
+        email: "",
+        address: "",
+        website: "",
+        company: "",
       },
       UserPostsResults: [],
       postUpdateResult: {
@@ -269,7 +307,7 @@ export default {
                         phone
                         }
                     }
-                    }`,
+                }`,
         }),
       })
         .then((response) => response.json())
@@ -315,8 +353,8 @@ export default {
         .then((data) => {
           console.log(data["data"].user);
           this.userInfoResults = data["data"].user;
-          this.userInfoResults.address = data["data"].user.address.street
-          this.userInfoResults.company = data["data"].user.company.name
+          this.userInfoResults.address = data["data"].user.address.street;
+          this.userInfoResults.company = data["data"].user.company.name;
         });
     },
     UserPosts(uid) {
@@ -459,8 +497,37 @@ export default {
           // this.results = data["data"].user.posts.data;
         });
     },
-    UserCompany(uid){
-      console.log(uid)
+    UserCompany(uid) {
+      console.log(uid);
+      fetch("https://graphqlzero.almansi.me/api", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          query: `query(
+                          $id: ID!,
+                    ){
+                    user(id:$id){
+                          name
+                          id
+                          company{
+                            name
+                            catchPhrase
+                            bs
+                          }
+                        }
+                      }`,
+          variables: { id: uid },
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data["data"].user);
+          this.userCompanyInfo = data["data"].user;
+          this.userCompanyInfo.cname = data["data"].user.company.name;
+          this.userCompanyInfo.bs = data["data"].user.company.bs;
+          this.userCompanyInfo.catchPhrase =
+            data["data"].user.company.catchPhrase;
+        });
     },
     showModal() {
       this.$refs["my-modal"].show();
