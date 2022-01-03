@@ -61,6 +61,12 @@
                   class="m-2"
                   >User's Albums</b-button
                 >
+                <b-button
+                  v-on:click="UserCompany(user.id)"
+                  variant="warning"
+                  class="m-2"
+                  >User's Company Info</b-button
+                >
               </th>
               <th scope="col" v-if="user.title">
                 <b-button
@@ -224,7 +230,15 @@ export default {
   data() {
     return {
       results: [],
-      userInfoResults: [],
+      userInfoResults: {
+        uid:"",
+        name:"",
+        username:"",
+        email:"",
+        address:"",
+        website:"",
+        company:""
+      },
       UserPostsResults: [],
       postUpdateResult: {
         id: "",
@@ -294,12 +308,15 @@ export default {
                       }
                     }
                   }`,
-            variables: { id: uid },
+          variables: { id: uid },
         }),
       })
         .then((response) => response.json())
         .then((data) => {
+          console.log(data["data"].user);
           this.userInfoResults = data["data"].user;
+          this.userInfoResults.address = data["data"].user.address.street
+          this.userInfoResults.company = data["data"].user.company.name
         });
     },
     UserPosts(uid) {
@@ -348,7 +365,7 @@ export default {
                     }
                   }
                 }`,
-              variables: { id: aid },
+          variables: { id: aid },
         }),
       })
         .then((response) => response.json())
@@ -441,6 +458,9 @@ export default {
           console.log(data["data"]);
           // this.results = data["data"].user.posts.data;
         });
+    },
+    UserCompany(uid){
+      console.log(uid)
     },
     showModal() {
       this.$refs["my-modal"].show();
